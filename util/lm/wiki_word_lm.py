@@ -9,6 +9,7 @@ import tensorflow as tf
 
 from os import path
 from util.lm import wiki_reader
+from Queue import PriorityQueue
 
 # Based off Zaremba, Sutskever, Vinyals "Recurrent Neural Network Regularization"
 # https://arxiv.org/abs/1409.2329v5
@@ -358,6 +359,82 @@ def get_perplexities(session, mtest, texts):
     perplexities.append(run_epoch(session, mtest, test_data, tf.no_op()))
 
   return perplexities
+
+def apply_language_model(items, alpha, beta):
+  # Conditionally load the language models
+  if not hasattr(apply_language_model, "mtest"):
+     apply_language_model.mtest, apply_language_model.session = _load_models()
+
+  # Replace log probabilities by score
+  items = _score_sentences(apply_language_model.mtest, apply_language_model.session, items, alpha, beta)
+
+  # Order sentences by score
+  items = _order_sentences(items)
+
+  # Return items
+  return items
+
+def _score_sentences(mtest, sess, items, alpha, beta):
+  # Loop over items
+  for index, item in enumerate(items):
+    # Replace log prob with score
+    items[index] = (item[0], item[1],  _score_sentences_impl(mtest, sess, item[1], item[2], alpha, beta), item[3], item[4])
+  # Return items
+  return items
+
+def _score_sentences_impl(mtest, sess, texts, log_probs, alpha, beta):
+  # Scope with lmGraph
+  with sess.graph.as_default():
+    # Calculate perplexities [TODO: Whitespace string's have undefined perplexity, thus the hack]
+    perplexities = get_perplexities(sess, mtest, ['x' if text.isspace() else text for text in texts])
+    # Calculate word counts lengths
+    word_counts = [len(text.split()) for text in texts]
+    # Calculate scores (log_probs + alpha * perplexities + beta * word_counts)
+    scores = list(-1 * np.array(log_probs) + alpha * np.array(perplexities) + beta * np.array(word_counts))
+  # Return scores
+  return scores
+
+def _order_sentences(items):
+  # Loop over items
+  for index, item in enumerate(items):
+    # Collect decodes, scores, and distances into tuples
+    item_lists = zip(item[1], item[2], item[3])
+    # Creaate PriorityQueue to order on score
+    priorityQueue = PriorityQueue()
+    # Order (decode, score, distance) on scores
+    [priorityQueue.put((score, (decode, score, distance))) for decode, score, distance in item_lists]
+    # Place ordered elements back into items[index]
+    ordered_item_lists = []
+    while not priorityQueue.empty():
+      score, (decode, score, distance) = priorityQueue.get()
+      ordered_item_lists.append((decode, score, distance))
+    decodes, scores, distances = zip(*ordered_item_lists)
+    items[index] = (item[0], list(decodes), list(scores), list(distances), item[4])
+  return items
+
+def _load_models():
+  # Define Graph for language model
+  lmGraph = tf.Graph()
+
+  # Define Graph and Session for language model
+  lmSession = tf.Session(graph=lmGraph)
+
+  # Scope with lmGraph
+  with lmGraph.as_default():
+    # Get models
+    _, _, mtest = get_language_models()
+
+    # Init variables
+    lmSession.run(tf.initialize_all_variables())
+
+    # Add ops to save and restore all the variables.
+    lmSaver = tf.train.Saver()
+
+    # Load language
+    load_models(lmSession, lmSaver)
+
+  # Return language model
+  return mtest, lmSession
 
 if __name__ == "__main__":
   tf.app.run()
