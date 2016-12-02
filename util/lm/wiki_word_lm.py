@@ -389,8 +389,8 @@ def _score_sentences_impl(mtest, sess, texts, log_probs, alpha, beta):
     perplexities = get_perplexities(sess, mtest, ['x' if text.isspace() else text for text in texts])
     # Calculate word counts lengths
     word_counts = [len(text.split()) for text in texts]
-    # Calculate scores (log_probs + alpha * perplexities + beta * word_counts)
-    scores = list(-1 * np.array(log_probs) + alpha * np.array(perplexities) + beta * np.array(word_counts))
+    # Calculate scores (log_probs + alpha * np.log2(np.reciprocal(perplexities)) + beta * word_counts)
+    scores = list(np.array(log_probs) + alpha * np.log2(np.reciprocal(np.array(perplexities))) + beta * np.array(word_counts))
   # Return scores
   return scores
 
