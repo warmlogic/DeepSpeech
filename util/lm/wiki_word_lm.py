@@ -390,6 +390,7 @@ def _score_sentences_impl(mtest, sess, texts, log_probs, alpha, beta):
     # Calculate word counts lengths
     word_counts = [len(text.split()) for text in texts]
     # Calculate scores (log_probs + alpha * np.log2(np.reciprocal(perplexities)) + beta * word_counts)
+    log_probs = [log_prob if log_prob < 0.0 else 0.0 for log_prob in log_probs] # Note: TF bug issue [http://bit.ly/2gN2aUk]
     scores = list(np.array(log_probs) + alpha * np.log2(np.reciprocal(np.array(perplexities))) + beta * np.array(word_counts))
   # Return scores
   return scores
@@ -401,12 +402,12 @@ def _order_sentences(items):
     item_lists = zip(item[1], item[2], item[3])
     # Creaate PriorityQueue to order on score
     priorityQueue = PriorityQueue()
-    # Order (decode, score, distance) on scores
-    [priorityQueue.put((score, (decode, score, distance))) for decode, score, distance in item_lists]
+    # Order (decode, score, distance) on negative scores
+    [priorityQueue.put(((-1 * score), (decode, score, distance))) for decode, score, distance in item_lists]
     # Place ordered elements back into items[index]
     ordered_item_lists = []
     while not priorityQueue.empty():
-      score, (decode, score, distance) = priorityQueue.get()
+      negative_score, (decode, score, distance) = priorityQueue.get()
       ordered_item_lists.append((decode, score, distance))
     decodes, scores, distances = zip(*ordered_item_lists)
     items[index] = (item[0], list(decodes), list(scores), list(distances), item[4])
