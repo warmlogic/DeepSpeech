@@ -230,9 +230,7 @@ def BiRNN(batch_x, seq_length, dropout, is_training):
 
         # First 1d convolution layer, made of 1024 filters which are 11 frames wide
         filters_1 = variable_on_cpu("w1", [11, n_input + 2*n_input*n_context, 1024], tf.contrib.layers.xavier_initializer())
-        bias_1 = variable_on_cpu("b1", [1024], tf.constant_initializer(0))
-        conv1d_1 = tf.nn.conv1d(batch_x, filters_1, stride=2, padding="SAME")
-        layer_1 = tf.nn.bias_add(conv1d_1, bias_1)
+        layer_1 = tf.nn.conv1d(batch_x, filters_1, stride=2, padding="SAME")
 
         # Batch normalization
         output = tf.contrib.layers.batch_norm(inputs=layer_1, decay=0.99, is_training=is_training)
