@@ -224,35 +224,36 @@ def conv_output_length(input_length, filter_size, padding, stride,
 # That said let us introduce the method `BiRNN()` that
 # takes a batch of data `batch_x` and performs inference upon it.
 def BiRNN(batch_x, seq_length, dropout, is_training):
-    # Input shape: [batch_size, n_steps, n_input + 2*n_input*n_context]
-    batch_x_shape = tf.shape(batch_x)
+    with tf.contrib.slim.arg_scope([tf.contrib.slim.model_variable, tf.contrib.slim.variable], device="/cpu:0"):
+        # Input shape: [batch_size, n_steps, n_input + 2*n_input*n_context]
+        batch_x_shape = tf.shape(batch_x)
 
-    # First 1d convolution layer, made of 1024 filters which are 11 frames wide
-    filters_1 = variable_on_cpu("w1", [11, n_input + 2*n_input*n_context, 1024], tf.contrib.layers.xavier_initializer())
-    bias_1 = variable_on_cpu("b1", [1024], tf.constant_initializer(0))
-    conv1d_1 = tf.nn.conv1d(batch_x, filters_1, stride=2, padding="SAME")
-    layer_1 = tf.nn.bias_add(conv1d_1, bias_1)
+        # First 1d convolution layer, made of 1024 filters which are 11 frames wide
+        filters_1 = variable_on_cpu("w1", [11, n_input + 2*n_input*n_context, 1024], tf.contrib.layers.xavier_initializer())
+        bias_1 = variable_on_cpu("b1", [1024], tf.constant_initializer(0))
+        conv1d_1 = tf.nn.conv1d(batch_x, filters_1, stride=2, padding="SAME")
+        layer_1 = tf.nn.bias_add(conv1d_1, bias_1)
 
-    # Batch normalization
-    output = tf.contrib.layers.batch_norm(inputs=layer_1, decay=0.99, is_training=is_training)
+        # Batch normalization
+        output = tf.contrib.layers.batch_norm(inputs=layer_1, decay=0.99, is_training=is_training)
 
-    # Three layers of GRU cells with 1024 nodes each
-    gru_cell = tf.nn.rnn_cell.GRUCell(1024, activation=tf.nn.relu)
-    multi_gru_cell = tf.nn.rnn_cell.MultiRNNCell([gru_cell] * 3)
-    rnn_outputs, _ = tf.nn.dynamic_rnn(multi_gru_cell, output, sequence_length=seq_length, dtype=tf.float32)
+        # Three layers of GRU cells with 1024 nodes each
+        gru_cell = tf.nn.rnn_cell.GRUCell(1024, activation=tf.nn.relu)
+        multi_gru_cell = tf.nn.rnn_cell.MultiRNNCell([gru_cell] * 3)
+        rnn_outputs, _ = tf.nn.dynamic_rnn(multi_gru_cell, output, sequence_length=seq_length, dtype=tf.float32)
 
-    # Batch norm the RNN outputs
-    rnn_outputs = tf.contrib.layers.batch_norm(inputs=rnn_outputs, decay=0.99, is_training=is_training)
+        # Batch norm the RNN outputs
+        rnn_outputs = tf.contrib.layers.batch_norm(inputs=rnn_outputs, decay=0.99, is_training=is_training)
 
-    # A final fully connected layer with linear activation
-    network_output = tf.contrib.layers.fully_connected(inputs=rnn_outputs, num_outputs=n_character, activation_fn=None)
+        # A final fully connected layer with linear activation
+        network_output = tf.contrib.layers.fully_connected(inputs=rnn_outputs, num_outputs=n_character, activation_fn=None)
 
-    # Transpose to time major
-    network_output = tf.transpose(network_output, [1, 0, 2])
+        # Transpose to time major
+        network_output = tf.transpose(network_output, [1, 0, 2])
 
-    # Because of the convolution, the output sequence length don't match the input sequence length.
-    # Provide a function to calculate the output sequence length given an input sequence length.
-    output_length = lambda x: conv_output_length(x, 11, padding="SAME", stride=2)
+        # Because of the convolution, the output sequence length don't match the input sequence length.
+        # Provide a function to calculate the output sequence length given an input sequence length.
+        output_length = lambda x: conv_output_length(x, 11, padding="SAME", stride=2)
 
     return network_output, output_length
 
@@ -395,13 +396,12 @@ def get_tower_results(batch_set, optimizer=None, is_training=False):
         with tf.device(available_devices[i]):
             # Create a scope for all operations of tower i
             with tf.name_scope('tower_%d' % i) as scope:
-                # Calculate the avg_loss and accuracy and retrieve the decoded
-                # batch along with the original batch's labels (Y) of this tower
-                total_loss, avg_loss, distance, accuracy, decoded, labels = \
-                    calculate_accuracy_and_loss(batch_set, 0.0 if optimizer is None else dropout_rate, is_training)
-
                 # Allow for variables to be re-used by the next tower
-                tf.get_variable_scope().reuse_variables()
+                with tf.variable_scope(tf.get_variable_scope(), reuse=True if i > 0 else None):
+                    # Calculate the avg_loss and accuracy and retrieve the decoded
+                    # batch along with the original batch's labels (Y) of this tower
+                    total_loss, avg_loss, distance, accuracy, decoded, labels = \
+                        calculate_accuracy_and_loss(batch_set, 0.0 if optimizer is None else dropout_rate, is_training)
 
                 # Retain tower's labels (Y)
                 tower_labels.append(labels)
