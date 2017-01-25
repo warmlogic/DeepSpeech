@@ -12,7 +12,7 @@ from os import rmdir
 from os import remove
 from glob import glob
 from math import ceil
-from Queue import Queue
+from queue import Queue
 from os import makedirs
 from sox import Transformer
 from itertools import cycle
@@ -74,7 +74,7 @@ class DataSet(object):
 
     def start_queue_threads(self, session, coord):
         self._coord = coord
-        batch_threads = [Thread(target=self._populate_batch_queue, args=(session,)) for i in xrange(self._thread_count)]
+        batch_threads = [Thread(target=self._populate_batch_queue, args=(session,)) for i in range(self._thread_count)]
         for batch_thread in batch_threads:
             batch_thread.daemon = True
             batch_thread.start()

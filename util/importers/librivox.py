@@ -11,7 +11,7 @@ from glob import glob
 from itertools import cycle
 from math import ceil
 from sox import Transformer
-from Queue import PriorityQueue
+from queue import PriorityQueue
 from shutil import rmtree
 from tensorflow.contrib.learn.python.learn.datasets import base
 from tensorflow.python.platform import gfile
@@ -68,7 +68,7 @@ class DataSet(object):
 
     def start_queue_threads(self, session, coord):
         self._coord = coord
-        batch_threads = [Thread(target=self._populate_batch_queue, args=(session,)) for i in xrange(self._thread_count)]
+        batch_threads = [Thread(target=self._populate_batch_queue, args=(session,)) for i in range(self._thread_count)]
         for batch_thread in batch_threads:
             batch_thread.daemon = True
             batch_thread.start()
@@ -122,7 +122,8 @@ class DataSet(object):
 def read_data_sets(data_dir, train_batch_size, dev_batch_size, test_batch_size, numcep, numcontext, thread_count=8, limit_dev=0, limit_test=0, limit_train=0):
     # Check if we can convert FLAC with SoX before we start
     sox_help_out = subprocess.check_output(["sox", "-h"])
-    if sox_help_out.find("flac") == -1:
+    # FIXED: corrected for python3
+    if sox_help_out.find(b"flac") == -1:
         print("Error: SoX doesn't support FLAC. Please install SoX with FLAC support and try again.")
         exit(1)
 
@@ -168,8 +169,8 @@ def read_data_sets(data_dir, train_batch_size, dev_batch_size, test_batch_size, 
     # to:
     #  data_dir/LibriSpeech/split-wav/1-2-3.wav
     _maybe_convert_wav(work_dir, "train-clean-100", "train-clean-100-wav")
-    _maybe_convert_wav(work_dir, "train-clean-360", "train-clean-360-wav")
-    _maybe_convert_wav(work_dir, "train-other-500", "train-other-500-wav")
+    #_maybe_convert_wav(work_dir, "train-clean-360", "train-clean-360-wav")
+    #_maybe_convert_wav(work_dir, "train-other-500", "train-other-500-wav")
 
     _maybe_convert_wav(work_dir, "dev-clean", "dev-clean-wav")
     _maybe_convert_wav(work_dir, "dev-other", "dev-other-wav")
@@ -185,8 +186,8 @@ def read_data_sets(data_dir, train_batch_size, dev_batch_size, test_batch_size, 
     #  data_dir/LibriSpeech/split-wav/1-2-2.txt
     #  ...
     _maybe_split_transcriptions(work_dir, "train-clean-100", "train-clean-100-wav")
-    _maybe_split_transcriptions(work_dir, "train-clean-360", "train-clean-360-wav")
-    _maybe_split_transcriptions(work_dir, "train-other-500", "train-other-500-wav")
+    #_maybe_split_transcriptions(work_dir, "train-clean-360", "train-clean-360-wav")
+    #_maybe_split_transcriptions(work_dir, "train-other-500", "train-other-500-wav")
 
     _maybe_split_transcriptions(work_dir, "dev-clean", "dev-clean-wav")
     _maybe_split_transcriptions(work_dir, "dev-other", "dev-other-wav")

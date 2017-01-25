@@ -39,11 +39,11 @@ def _create_rpc_callback(event):
     def _callback(result_future):
         exception = result_future.exception()
         if exception:
-            print exception
+            print(exception)
         else:
             results = tf.contrib.util.make_ndarray(result_future.result().outputs['outputs'])
             for result in results[0]:
-                print ndarray_to_text(result)
+                print(ndarray_to_text(result))
         event.set()
     return _callback
 
@@ -64,10 +64,10 @@ def do_inference(hostport, audio):
 
 def main(_):
     if not FLAGS.server:
-        print 'please specify server host:port'
+        print('please specify server host:port')
         return
     if not FLAGS.file:
-        print 'pleace specify an audio file'
+        print('pleace specify an audio file')
         return
 
     audio_waves = audiofile_to_input_vector(

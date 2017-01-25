@@ -19,8 +19,8 @@ tensorflow_root         = sys.argv[1]
 tensorflow_serving_root = sys.argv[2]
 
 if not os.path.isdir(tensorflow_root) or not os.path.isdir(tensorflow_serving_root):
-    print "Execution requires git clones of tensorflow and tensorflow serving."
-    print "No tensorflow_root (%s) or no tensorflow_serving_root (%s)" % (tensorflow_root, tensorflow_serving_root)
+    print("Execution requires git clones of tensorflow and tensorflow serving.")
+    print("No tensorflow_root (%s) or no tensorflow_serving_root (%s)" % (tensorflow_root, tensorflow_serving_root))
     sys.exit(1)
 
 tmpdir    = tempfile.mkdtemp(suffix='tf_proto', prefix='tmp')

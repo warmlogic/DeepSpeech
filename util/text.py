@@ -1,6 +1,7 @@
 import numpy as np
 import tensorflow as tf
 import re
+from functools import reduce
 
 # Constants
 SPACE_TOKEN = '<space>'
@@ -9,6 +10,8 @@ FIRST_INDEX = ord('a') - 1  # 0 is reserved to space
 
 def text_to_char_array(original):
     # Create list of sentence's words w/spaces replaced by ''
+    if isinstance(original, bytes):
+        original = original.decode()
     result = original.replace(" '", "") # TODO: Deal with this properly
     result = result.replace("'", "")    # TODO: Deal with this properly
     result = result.replace(' ', '  ')
@@ -34,7 +37,7 @@ def sparse_tuple_from(sequences, dtype=np.int32):
     values = []
 
     for n, seq in enumerate(sequences):
-        indices.extend(zip([n]*len(seq), xrange(len(seq))))
+        indices.extend(zip([n]*len(seq), range(len(seq))))
         values.extend(seq)
 
     indices = np.asarray(indices, dtype=np.int64)
@@ -128,7 +131,7 @@ def gather_nd(params, indices, shape):
     rank = len(shape)
     flat_params = tf.reshape(params, [-1])
     multipliers = [reduce(lambda x, y: x*y, shape[i+1:], 1) for i in range(0, rank)]
-    indices_unpacked = tf.unpack(tf.transpose(indices, [rank - 1] + range(0, rank - 1)))
+    indices_unpacked = tf.unpack(tf.transpose(indices, [rank - 1] + list(range(0, rank - 1))))
     flat_indices = sum([a*b for a,b in zip(multipliers, indices_unpacked)])
     return tf.gather(flat_params, flat_indices)
 

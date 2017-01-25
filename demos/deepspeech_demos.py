@@ -53,7 +53,7 @@ def _create_rpc_callback(event, server):
     def _callback(result_future):
         exception = result_future.exception()
         if exception:
-            print exception
+            print(exception)
         else:
             results = tf.contrib.util.make_ndarray(result_future.result().outputs['outputs'])
             for result in results[0]:
@@ -101,7 +101,7 @@ class DSSocketServer(threading.Thread):
         self.stopped = 0
 
     def message_received(self, client, server, message):
-        print 'Message received: %s' % (message)
+        print('Message received: %s' % (message))
         if message == 'STOP':
             self.stopped += 1
         elif message == 'START':
@@ -125,7 +125,7 @@ class DSWebServer(threading.Thread):
         self.socket_server = DSSocketServer()
 
     def run(self):
-        print 'Starting server, visit http://localhost:%d/' % (FLAGS.port)
+        print('Starting server, visit http://localhost:%d/' % (FLAGS.port))
         self.socket_server.start()
         self.server.serve_forever()
 
@@ -138,7 +138,7 @@ class DSWebServer(threading.Thread):
 
 def main(_):
     if not FLAGS.server:
-        print 'please specify server host:port'
+        print('please specify server host:port')
         return
 
     vad = webrtcvad.Vad()
@@ -146,7 +146,7 @@ def main(_):
 
     # Default to using pulse
     device = 0
-    for i in xrange(0, pa.get_device_count()):
+    for i in range(0, pa.get_device_count()):
         info = pa.get_device_info_by_index(i)
         if info['name'] == 'pulse':
             device = i
@@ -178,7 +178,7 @@ def main(_):
             if vad.is_speech(audio.tostring(), 16000):
                 if recording != True:
                     recording = True
-                    print 'Recording...'
+                    print('Recording...')
                     server.message('RECORD')
                 silent_frames = 0
             else:
@@ -198,10 +198,10 @@ def main(_):
                     recorded = array('h')
                 recording = False
                 silent_frames = 0
-                print 'Stopped recording'
+                print('Stopped recording')
             else:
                 stream.start_stream()
-                print 'Resume recording'
+                print('Resume recording')
 
         if recording and len(recorded) % SEND_INTERVAL is 0:
             audiofile = StringIO.StringIO()
