@@ -10,8 +10,6 @@ FIRST_INDEX = ord('a') - 1  # 0 is reserved to space
 
 def text_to_char_array(original):
     # Create list of sentence's words w/spaces replaced by ''
-    if isinstance(original, bytes):
-        original = original.decode()
     result = original.replace(" '", "") # TODO: Deal with this properly
     result = result.replace("'", "")    # TODO: Deal with this properly
     result = result.replace(' ', '  ')
