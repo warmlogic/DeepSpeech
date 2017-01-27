@@ -16,8 +16,8 @@ def parse_for_deps(filename):
     with open(filename, 'r') as code:
         soup = BeautifulSoup(code.read(), 'html.parser')
 
-    external_links   = filter(lambda x: x is not None, [ link.get('href') for link in soup.find_all('link') ])
-    external_scripts = filter(lambda x: x is not None, [ script.get('src') for script in soup.find_all('script') ])
+    external_links   = list(filter(lambda x: x is not None, [ link.get('href') for link in soup.find_all('link') ]))
+    external_scripts = list(filter(lambda x: x is not None, [ script.get('src') for script in soup.find_all('script') ]))
 
     # Verify with stat()
     try:
@@ -82,7 +82,7 @@ def push_files_sftp(files, auth_infos):
     """
 
     # Directories that we might be required to create
-    dirs = filter(lambda x: len(x) > 0, list(set([ os.path.dirname(x) for x in files ])))
+    dirs = list(filter(lambda x: len(x) > 0, list(set([ os.path.dirname(x) for x in files ]))))
 
     created = []
     pushed = []
@@ -147,7 +147,7 @@ def maybe_publish(file='index.htm'):
                except TypeError as ex:
                    print("WARNING:", "Keeping default SSH port value because of:", ex)
 
-    missing_env = filter(lambda x: len(str(ssh_auth_infos[x])) == 0, ssh_auth_infos.keys())
+    missing_env = list(filter(lambda x: len(str(ssh_auth_infos[x])) == 0, ssh_auth_infos.keys()))
     if len(missing_env) > 0:
         print("Not publishing, missing some required environment variables:", missing_env)
         print("But maybe this is what you wanted, after all ...")
